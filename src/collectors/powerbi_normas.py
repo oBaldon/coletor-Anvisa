@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 import time
 from dataclasses import dataclass
@@ -87,13 +86,19 @@ class PowerBINormasCollector:
         all_rows: list[dict[str, Any]] = []
         restart_tokens: list[list[Any]] | None = None
         seen_restart_tokens: set[str] = set()
+        run_id = self._utc_timestamp_for_filename()
 
         for page in range(1, max_pages + 1):
             payload = self.build_payload(restart_tokens=restart_tokens)
             response_json = self.fetch_page(payload)
 
             if raw_dir:
-                self._save_raw_response(response_json, raw_dir, page)
+                self._save_raw_response(
+                    response_json=response_json,
+                    raw_dir=raw_dir,
+                    page=page,
+                    run_id=run_id,
+                )
 
             rows = self.decode_response(response_json)
             all_rows.extend(rows)
@@ -394,9 +399,17 @@ class PowerBINormasCollector:
         return unique
 
     @staticmethod
-    def _save_raw_response(response_json: dict[str, Any], raw_dir: str | Path, page: int) -> None:
+    def _utc_timestamp_for_filename() -> str:
+        return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+
+    @staticmethod
+    def _save_raw_response(
+        response_json: dict[str, Any],
+        raw_dir: str | Path,
+        page: int,
+        run_id: str,
+    ) -> None:
         raw_path = Path(raw_dir)
         raw_path.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        file_path = raw_path / f"powerbi_normas_page_{page:03d}_{stamp}.json"
+        file_path = raw_path / f"powerbi_normas_page_{page:03d}_{run_id}.json"
         file_path.write_text(json.dumps(response_json, ensure_ascii=False, indent=2), encoding="utf-8")

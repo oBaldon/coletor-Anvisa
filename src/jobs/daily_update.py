@@ -18,6 +18,7 @@ class DailyUpdateResult:
     normalizadas: int
     csv: UpsertResult
     export: ExportResult | None
+    decoded_path: Path | None = None
 
 
 def run_daily_update(
@@ -27,9 +28,15 @@ def run_daily_update(
     raw_dir: str | Path | None = "data/raw",
     max_pages: int = 100,
     export_urls: bool = True,
+    save_decoded: bool = True,
 ) -> DailyUpdateResult:
     collector = PowerBINormasCollector()
     raw_rows = collector.collect_all(max_pages=max_pages, raw_dir=raw_dir)
+
+    decoded_path = None
+    if save_decoded and raw_dir:
+        decoded_path = save_decoded_rows(raw_rows, raw_dir)
+
     normalized = normalize_rows(raw_rows)
 
     repo = CsvNormasRepository(csv_path)
@@ -48,13 +55,18 @@ def run_daily_update(
         normalizadas=len(normalized),
         csv=csv_result,
         export=export_result,
+        decoded_path=decoded_path,
     )
+
+
+def utc_timestamp_for_filename() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 
 
 def save_decoded_rows(rows: list[dict[str, Any]], out_dir: str | Path = "data/raw") -> Path:
     path = Path(out_dir)
     path.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = utc_timestamp_for_filename()
     file_path = path / f"powerbi_normas_decoded_{stamp}.json"
     file_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
     return file_path

@@ -75,6 +75,7 @@ def run_daily(
     env_path: Path = typer.Option(Path("data/url.env"), help="Arquivo env consumido pelo RAG."),
     max_pages: int = typer.Option(100, help="Limite de páginas do Power BI."),
     raw_dir: Path = typer.Option(Path("data/raw"), help="Diretório para respostas brutas."),
+    save_decoded: bool = typer.Option(True, help="Salvar JSON decodificado consolidado em data/raw."),
 ) -> None:
     """Executa fluxo completo: coleta, normaliza, atualiza CSV e exporta URLs."""
     result = run_daily_update(
@@ -84,11 +85,15 @@ def run_daily(
         raw_dir=raw_dir,
         max_pages=max_pages,
         export_urls=True,
+        save_decoded=save_decoded,
     )
 
     console.print(f"[green]Rotina diária concluída.[/green]")
     console.print(f"Coletadas: {result.coletadas}")
     console.print(f"Normalizadas: {result.normalizadas}")
+    if result.decoded_path:
+        console.print(f"JSON decodificado: {result.decoded_path}")
+
     print_upsert_result(result.csv)
 
     if result.export:
