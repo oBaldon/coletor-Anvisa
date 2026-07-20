@@ -19,8 +19,8 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m src.cli run-daily
       - run: |
-          git config user.name "inteligreg-bot"
-          git config user.email "bot@inteligreg.local"
+          git config user.name "intelireg-bot"
+          git config user.email "bot@intelireg.local"
           git add data/normas.csv data/url.env data/urls_anvisa.txt
           git commit -m "Atualiza normas ANVISA" || echo "Sem alterações para commit"
           git push
